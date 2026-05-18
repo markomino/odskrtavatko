@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Odškrtávátko — Výlet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&family=Caveat:wght@400..700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f3e9d2;
+    --paper-deep: #e8dab8;
+    --ink: #2b241c;
+    --ink-soft: #5a4d3e;
+    --ember: #b9492a;
+    --ember-deep: #8c2d18;
+    --moss: #4f6b3a;
+    --moss-deep: #3a5028;
+    --shadow: rgba(43, 36, 28, 0.18);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Newsreader', Georgia, serif;
+    min-height: 100vh;
+  }
+  body {
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(185,73,42,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 90%, rgba(79,107,58,0.07) 0%, transparent 50%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='2' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 0.17 0 0 0 0 0.14 0 0 0 0 0.11 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-attachment: fixed;
+  }
+
+  .sheet {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  header.banner {
+    text-align: center;
+    padding: 24px 0 8px;
+    border-bottom: 2px dashed var(--ink);
+    margin-bottom: 32px;
+    position: relative;
+  }
+  header.banner::before, header.banner::after {
+    content: "✦";
+    position: absolute;
+    top: 32px;
+    color: var(--ember);
+    font-size: 14px;
+  }
+  header.banner::before { left: 0; }
+  header.banner::after { right: 0; }
+
+  h1 {
+    font-family: 'Special Elite', monospace;
+    font-size: clamp(28px, 5vw, 42px);
+    margin: 0 0 4px;
+    letter-spacing: -0.5px;
+    color: var(--ink);
+  }
+  .subtitle {
+    font-family: 'Caveat', cursive;
+    font-size: 22px;
+    color: var(--ember);
+    margin-bottom: 12px;
+  }
+
+  .progress-wrap {
+    background: var(--paper-deep);
+    border: 1.5px solid var(--ink);
+    height: 14px;
+    border-radius: 0;
+    overflow: hidden;
+    margin: 18px 0 6px;
+    position: relative;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.15);
+  }
+  .progress-bar {
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--moss),
+      var(--moss) 8px,
+      var(--moss-deep) 8px,
+      var(--moss-deep) 16px
+    );
+    height: 100%;
+    width: 0%;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .progress-text {
+    font-family: 'Special Elite', monospace;
+    font-size: 13px;
+    color: var(--ink-soft);
+    text-align: center;
+    letter-spacing: 1px;
+  }
+
+  .section-title {
+    font-family: 'Special Elite', monospace;
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 36px 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-title::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--ink-soft);
+    opacity: 0.4;
+  }
+
+  .group {
+    background: rgba(255, 252, 240, 0.5);
+    border: 1.5px solid var(--ink);
+    padding: 18px 22px;
+    margin-bottom: 16px;
+    box-shadow: 4px 4px 0 var(--shadow);
+    position: relative;
+  }
+  .group.unassigned {
+    background: rgba(185, 73, 42, 0.07);
+    border-color: var(--ember-deep);
+    border-style: dashed;
+  }
+  .group-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px dotted var(--ink-soft);
+  }
+  .avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--ember);
+    color: var(--paper);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Special Elite', monospace;
+    font-size: 16px;
+    border: 2px solid var(--ink);
+    flex-shrink: 0;
+  }
+  .group:nth-child(odd) .avatar { background: var(--moss); }
+  .group.unassigned .avatar { background: var(--ember-deep); }
+
+  .group-name {
+    font-family: 'Special Elite', monospace;
+    font-size: 18px;
+    letter-spacing: 0.5px;
+  }
+  .group-count {
+    font-family: 'Caveat', cursive;
+    font-size: 20px;
+    color: var(--ink-soft);
+    margin-left: auto;
+  }
+
+  .task {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 8px 0;
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.2s;
+  }
+  .task:hover .task-text { color: var(--ember); }
+
+  .checkbox {
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    flex-shrink: 0;
+    margin-top: 2px;
+    position: relative;
+    transition: all 0.15s;
+  }
+  .task.done .checkbox {
+    background: var(--moss);
+    border-color: var(--moss-deep);
+  }
+  .task.done .checkbox::after {
+    content: "✓";
+    position: absolute;
+    inset: 0;
+    color: var(--paper);
+    font-family: 'Caveat', cursive;
+    font-size: 22px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .task.done .task-text {
+    text-decoration: line-through;
+    text-decoration-style: wavy;
+    text-decoration-color: var(--ember);
+    color: var(--ink-soft);
+    opacity: 0.65;
+  }
+
+  .task-text {
+    font-size: 17px;
+    line-height: 1.5;
+    transition: color 0.15s;
+  }
+  .task-note {
+    font-family: 'Caveat', cursive;
+    font-size: 17px;
+    color: var(--ember);
+    margin-left: 6px;
+  }
+
+  .claim-btn {
+    margin-left: auto;
+    font-family: 'Special Elite', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    background: transparent;
+    border: 1.5px solid var(--ember-deep);
+    color: var(--ember-deep);
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .claim-btn:hover {
+    background: var(--ember-deep);
+    color: var(--paper);
+  }
+
+  .footer-actions {
+    margin-top: 40px;
+    text-align: center;
+    font-family: 'Special Elite', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .reset-btn {
+    background: none;
+    border: none;
+    color: var(--ink-soft);
+    font-family: inherit;
+    font-size: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+    letter-spacing: 1px;
+  }
+  .reset-btn:hover { color: var(--ember-deep); }
+
+  .status {
+    text-align: center;
+    font-family: 'Caveat', cursive;
+    font-size: 18px;
+    color: var(--ink-soft);
+    margin: 20px 0;
+    min-height: 24px;
+  }
+
+  .loading {
+    text-align: center;
+    padding: 60px 20px;
+    font-family: 'Special Elite', monospace;
+    color: var(--ink-soft);
+    letter-spacing: 2px;
+  }
+
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(43, 36, 28, 0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    padding: 28px;
+    max-width: 360px;
+    width: 100%;
+    box-shadow: 8px 8px 0 var(--shadow);
+  }
+  .modal h3 {
+    font-family: 'Special Elite', monospace;
+    margin: 0 0 16px;
+    font-size: 18px;
+  }
+  .modal input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--ink);
+    background: var(--paper);
+    font-family: 'Newsreader', serif;
+    font-size: 16px;
+    margin-bottom: 16px;
+  }
+  .modal input:focus {
+    outline: 2px solid var(--ember);
+    outline-offset: 1px;
+  }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  .modal-btn {
+    font-family: 'Special Elite', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+    padding: 8px 16px;
+    border: 1.5px solid var(--ink);
+    background: var(--paper);
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+  .modal-btn.primary {
+    background: var(--moss);
+    color: var(--paper);
+    border-color: var(--moss-deep);
+  }
+
+  @media (max-width: 520px) {
+    .sheet { padding: 24px 16px 60px; }
+    .group { padding: 14px 16px; }
+    .claim-btn { font-size: 10px; padding: 3px 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <header class="banner">
+    <h1>Odškrtávátko</h1>
+    <div class="subtitle">co kdo má na starosti — výlet</div>
+  </header>
+
+  <div id="content" class="loading">načítám sdílený stav…</div>
+
+  <div class="footer-actions">
+    <span>změny se ukládají všem — </span>
+    <button class="reset-btn" id="reset-btn">resetovat vše</button>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="claim-modal">
+  <div class="modal">
+    <h3 id="modal-title">Kdo si bere úkol?</h3>
+    <input type="text" id="claim-input" placeholder="Tvoje jméno" maxlength="20">
+    <div class="modal-actions">
+      <button class="modal-btn" id="modal-cancel">zrušit</button>
+      <button class="modal-btn primary" id="modal-save">přihlásit se</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'trip-checklist-v1';
+
+const DEFAULT_TASKS = [
+  { id: 't1',  text: 'Pochodně',                              assignee: 'Marek Parek', note: '', done: false },
+  { id: 't2',  text: 'Vyrobit pochodeň z ředidla',            assignee: null,          note: '', done: false },
+  { id: 't3',  text: 'Místo, kde se sejdeme na deskovku',     assignee: null,          note: '', done: false },
+  { id: 't4',  text: 'Kotlíkový guláš',                       assignee: 'Marek Parek', note: '', done: false },
+  { id: 't5',  text: 'Kotlík',                                assignee: 'Petr Malík',  note: '', done: false },
+  { id: 't6',  text: 'Velký kostky ledu',                     assignee: null,          note: '', done: false },
+  { id: 't7',  text: 'Zajistit krabici / lednici',            assignee: null,          note: '', done: false },
+  { id: 't8',  text: 'Poker Dealerka',                        assignee: 'Marko',       note: '', done: false },
+  { id: 't9',  text: 'Spacák',                                assignee: 'Ali',         note: '', done: false },
+  { id: 't10', text: 'Hamaka',                                assignee: 'Petr',        note: '', done: false },
+  { id: 't11', text: 'Vyřešit převzetí auta',                 assignee: null,          note: '', done: false },
+  { id: 't12', text: 'Hodně balené vody (pití + uhašení)',    assignee: null,          note: '', done: false },
+  { id: 't13', text: 'Snídaně — vejce',                       assignee: null,          note: '', done: false },
+  { id: 't14', text: 'Řidič',                                 assignee: 'Lukáš',       note: '', done: false },
+];
+
+let state = { tasks: [] };
+let pendingClaimId = null;
+
+const contentEl = document.getElementById('content');
+const modal = document.getElementById('claim-modal');
+const modalInput = document.getElementById('claim-input');
+const modalTitle = document.getElementById('modal-title');
+
+async function loadState() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      state = JSON.parse(stored);
+      // Migration: ensure all default tasks exist
+      const existingIds = new Set(state.tasks.map(t => t.id));
+      for (const t of DEFAULT_TASKS) {
+        if (!existingIds.has(t.id)) state.tasks.push({ ...t });
+      }
+      return;
+    }
+  } catch (e) {
+    // Key doesn't exist yet — use defaults
+  }
+  state = { tasks: DEFAULT_TASKS.map(t => ({ ...t })) };
+  await saveState();
+}
+
+async function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.error('Save failed', e);
+  }
+}
+
+function initials(name) {
+  if (!name) return '?';
+  return name.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2);
+}
+
+function render() {
+  // Group by assignee
+  const groups = new Map();
+  const unassigned = [];
+  for (const t of state.tasks) {
+    if (!t.assignee) {
+      unassigned.push(t);
+    } else {
+      if (!groups.has(t.assignee)) groups.set(t.assignee, []);
+      groups.get(t.assignee).push(t);
+    }
+  }
+
+  const total = state.tasks.length;
+  const done = state.tasks.filter(t => t.done).length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+
+  let html = `
+    <div class="progress-wrap">
+      <div class="progress-bar" style="width: ${pct}%"></div>
+    </div>
+    <div class="progress-text">${done} / ${total} hotovo  ·  ${pct}%</div>
+  `;
+
+  if (unassigned.length > 0) {
+    html += `<div class="section-title">⚠ Bez majitele — kdo si vezme?</div>`;
+    html += `<div class="group unassigned">
+      <div class="group-header">
+        <div class="avatar">?</div>
+        <div class="group-name">Nepřiřazeno</div>
+        <div class="group-count">${unassigned.length} ${unassigned.length === 1 ? 'úkol' : unassigned.length < 5 ? 'úkoly' : 'úkolů'}</div>
+      </div>`;
+    for (const t of unassigned) {
+      html += renderTask(t, true);
+    }
+    html += `</div>`;
+  }
+
+  if (groups.size > 0) {
+    html += `<div class="section-title">✦ Rozdané úkoly</div>`;
+    const sortedGroups = [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0], 'cs'));
+    for (const [name, tasks] of sortedGroups) {
+      const allDone = tasks.every(t => t.done);
+      html += `<div class="group" ${allDone ? 'style="opacity:0.72"' : ''}>
+        <div class="group-header">
+          <div class="avatar">${initials(name)}</div>
+          <div class="group-name">${escapeHtml(name)}</div>
+          <div class="group-count">${tasks.filter(t => t.done).length}/${tasks.length}</div>
+        </div>`;
+      for (const t of tasks) {
+        html += renderTask(t, false);
+      }
+      html += `</div>`;
+    }
+  }
+
+  contentEl.classList.remove('loading');
+  contentEl.innerHTML = html;
+
+  // Wire events
+  contentEl.querySelectorAll('[data-toggle]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      if (e.target.classList.contains('claim-btn')) return;
+      toggleTask(el.dataset.toggle);
+    });
+  });
+  contentEl.querySelectorAll('[data-claim]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openClaimModal(el.dataset.claim);
+    });
+  });
+}
+
+function renderTask(t, showClaim) {
+  return `
+    <div class="task ${t.done ? 'done' : ''}" data-toggle="${t.id}">
+      <div class="checkbox"></div>
+      <div class="task-text">${escapeHtml(t.text)}${t.note ? `<span class="task-note">— ${escapeHtml(t.note)}</span>` : ''}</div>
+      ${showClaim ? `<button class="claim-btn" data-claim="${t.id}">vezmu si</button>` : ''}
+    </div>
+  `;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+async function toggleTask(id) {
+  const t = state.tasks.find(x => x.id === id);
+  if (!t) return;
+  t.done = !t.done;
+  render();
+  await saveState();
+}
+
+function openClaimModal(id) {
+  pendingClaimId = id;
+  const t = state.tasks.find(x => x.id === id);
+  modalTitle.textContent = t ? `Kdo si bere: ${t.text}?` : 'Kdo si bere úkol?';
+  modalInput.value = '';
+  modal.classList.add('show');
+  setTimeout(() => modalInput.focus(), 50);
+}
+
+function closeClaimModal() {
+  modal.classList.remove('show');
+  pendingClaimId = null;
+}
+
+async function confirmClaim() {
+  const name = modalInput.value.trim();
+  if (!name || !pendingClaimId) { closeClaimModal(); return; }
+  const t = state.tasks.find(x => x.id === pendingClaimId);
+  if (t) t.assignee = name;
+  closeClaimModal();
+  render();
+  await saveState();
+}
+
+document.getElementById('modal-cancel').addEventListener('click', closeClaimModal);
+document.getElementById('modal-save').addEventListener('click', confirmClaim);
+modalInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') confirmClaim();
+  if (e.key === 'Escape') closeClaimModal();
+});
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) closeClaimModal();
+});
+
+document.getElementById('reset-btn').addEventListener('click', async () => {
+  if (!confirm('Vážně resetovat všechno pro všechny?')) return;
+  state = { tasks: DEFAULT_TASKS.map(t => ({ ...t })) };
+  await saveState();
+  render();
+});
+
+(async () => {
+  await loadState();
+  render();
+})();
+</script>
+</body>
+</html>
