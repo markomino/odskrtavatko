@@ -376,10 +376,10 @@
 const STORAGE_KEY = 'trip-checklist-v1';
 
 const DEFAULT_TASKS = [
-  { id: 't1',  text: 'Pochodně',                              assignee: 'Marek Parek', note: '', done: false },
+  { id: 't1',  text: 'Pochodně',                              assignee: 'Marek',       note: '', done: false },
   { id: 't2',  text: 'Vyrobit pochodeň z ředidla',            assignee: null,          note: '', done: false },
   { id: 't3',  text: 'Místo, kde se sejdeme na deskovku',     assignee: null,          note: '', done: false },
-  { id: 't4',  text: 'Kotlíkový guláš',                       assignee: 'Marek Parek', note: '', done: false },
+  { id: 't4',  text: 'Kotlíkový guláš',                       assignee: 'Marek',       note: '', done: false },
   { id: 't5',  text: 'Kotlík',                                assignee: 'Petr Malík',  note: '', done: false },
   { id: 't6',  text: 'Velký kostky ledu',                     assignee: null,          note: '', done: false },
   { id: 't7',  text: 'Zajistit krabici / lednici',            assignee: null,          note: '', done: false },
@@ -504,6 +504,12 @@ function render() {
       openClaimModal(el.dataset.claim);
     });
   });
+  contentEl.querySelectorAll('[data-unassign]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      unassignTask(el.dataset.unassign);
+    });
+  });
 }
 
 function renderTask(t, showClaim) {
@@ -511,7 +517,7 @@ function renderTask(t, showClaim) {
     <div class="task ${t.done ? 'done' : ''}" data-toggle="${t.id}">
       <div class="checkbox"></div>
       <div class="task-text">${escapeHtml(t.text)}${t.note ? `<span class="task-note">— ${escapeHtml(t.note)}</span>` : ''}</div>
-      ${showClaim ? `<button class="claim-btn" data-claim="${t.id}">vezmu si</button>` : ''}
+      ${showClaim ? `<button class="claim-btn" data-claim="${t.id}">vezmu si</button>` : `<button class="claim-btn" data-unassign="${t.id}">odebrat</button>`}
     </div>
   `;
 }
@@ -526,6 +532,14 @@ async function toggleTask(id) {
   const t = state.tasks.find(x => x.id === id);
   if (!t) return;
   t.done = !t.done;
+  render();
+  await saveState();
+}
+
+async function unassignTask(id) {
+  const t = state.tasks.find(x => x.id === id);
+  if (!t) return;
+  t.assignee = null;
   render();
   await saveState();
 }
