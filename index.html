@@ -372,8 +372,21 @@
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
 <script>
-const STORAGE_KEY = 'trip-checklist-v1';
+const firebaseConfig = {
+  apiKey: "AIzaSyCoK8uTLI0Rp2Bx0hv7XinBlyBY0A9SSC8",
+  authDomain: "odskrtavatko.firebaseapp.com",
+  databaseURL: "https://odskrtavatko-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "odskrtavatko",
+  storageBucket: "odskrtavatko.firebasestorage.app",
+  messagingSenderId: "769785484823",
+  appId: "1:769785484823:web:6ac13772dc71834ae76e52"
+};
+firebase.initializeApp(firebaseConfig);
+const stateRef = firebase.database().ref('checklist');
 
 const DEFAULT_TASKS = [
   { id: 't1',  text: 'Pochodně',                              assignee: 'Marek',       note: '', done: false },
@@ -400,28 +413,28 @@ const modal = document.getElementById('claim-modal');
 const modalInput = document.getElementById('claim-input');
 const modalTitle = document.getElementById('modal-title');
 
-async function loadState() {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      state = JSON.parse(stored);
+function loadState() {
+  stateRef.on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data && data.tasks) {
+      state = data;
       // Migration: ensure all default tasks exist
       const existingIds = new Set(state.tasks.map(t => t.id));
       for (const t of DEFAULT_TASKS) {
         if (!existingIds.has(t.id)) state.tasks.push({ ...t });
       }
-      return;
+    } else {
+      // First time — seed with defaults
+      state = { tasks: DEFAULT_TASKS.map(t => ({ ...t })) };
+      saveState();
     }
-  } catch (e) {
-    // Key doesn't exist yet — use defaults
-  }
-  state = { tasks: DEFAULT_TASKS.map(t => ({ ...t })) };
-  await saveState();
+    render();
+  });
 }
 
 async function saveState() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    await stateRef.set(state);
   } catch (e) {
     console.error('Save failed', e);
   }
@@ -585,10 +598,7 @@ document.getElementById('reset-btn').addEventListener('click', async () => {
   render();
 });
 
-(async () => {
-  await loadState();
-  render();
-})();
+loadState();
 </script>
 </body>
 </html>
