@@ -182,6 +182,12 @@
     transition: opacity 0.2s;
   }
   .task:hover .task-text { color: var(--ember); }
+  .task.long-press-ready {
+    touch-action: manipulation;
+  }
+  .task.long-pressing {
+    background: rgba(185, 73, 42, 0.12);
+  }
 
   .checkbox {
     width: 22px;
@@ -462,6 +468,7 @@ const DEFAULT_TASKS = [
 
 let state = { tasks: [] };
 let pendingClaimId = null;
+const LONG_PRESS_MS = 700;
 
 const contentEl = document.getElementById('content');
 const modal = document.getElementById('claim-modal');
@@ -566,6 +573,10 @@ function render() {
   contentEl.querySelectorAll('[data-toggle]').forEach(el => {
     el.addEventListener('click', (e) => {
       if (e.target.classList.contains('claim-btn')) return;
+      if (el.dataset.longPressTriggered === '1') {
+        el.dataset.longPressTriggered = '0';
+        return;
+      }
       toggleTask(el.dataset.toggle);
     });
   });
@@ -581,16 +592,46 @@ function render() {
       unassignTask(el.dataset.unassign);
     });
   });
+  contentEl.querySelectorAll('[data-remove-unassigned]').forEach(el => {
+    setupLongPressRemoval(el, el.dataset.removeUnassigned);
+  });
 }
 
 function renderTask(t, showClaim) {
   return `
-    <div class="task ${t.done ? 'done' : ''}" data-toggle="${t.id}">
+    <div class="task ${t.done ? 'done' : ''} ${showClaim ? 'long-press-ready' : ''}" data-toggle="${t.id}" ${showClaim ? `data-remove-unassigned="${t.id}"` : ''}>
       <div class="checkbox"></div>
       <div class="task-text">${escapeHtml(t.text)}${t.note ? `<span class="task-note">— ${escapeHtml(t.note)}</span>` : ''}</div>
       ${showClaim ? `<button class="claim-btn" data-claim="${t.id}">vezmu si</button>` : `<button class="claim-btn" data-unassign="${t.id}">odebrat</button>`}
     </div>
   `;
+}
+
+function setupLongPressRemoval(el, id) {
+  let timer = null;
+
+  const clearTimer = () => {
+    if (!timer) return;
+    clearTimeout(timer);
+    timer = null;
+    el.classList.remove('long-pressing');
+  };
+
+  el.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('.claim-btn')) return;
+    clearTimer();
+    el.classList.add('long-pressing');
+    timer = setTimeout(async () => {
+      timer = null;
+      el.classList.remove('long-pressing');
+      el.dataset.longPressTriggered = '1';
+      await removeUnassignedTask(id);
+    }, LONG_PRESS_MS);
+  });
+
+  el.addEventListener('pointerup', clearTimer);
+  el.addEventListener('pointerleave', clearTimer);
+  el.addEventListener('pointercancel', clearTimer);
 }
 
 function escapeHtml(s) {
@@ -632,6 +673,15 @@ async function unassignTask(id) {
   const t = state.tasks.find(x => x.id === id);
   if (!t) return;
   t.assignee = null;
+  render();
+  await saveState();
+}
+
+async function removeUnassignedTask(id) {
+  const idx = state.tasks.findIndex(x => x.id === id && !x.assignee);
+  if (idx === -1) return;
+  if (!confirm('Smazat tento nepřiřazený úkol?')) return;
+  state.tasks.splice(idx, 1);
   render();
   await saveState();
 }
