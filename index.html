@@ -182,11 +182,20 @@
     transition: opacity 0.2s;
   }
   .task:hover .task-text { color: var(--ember); }
-  .task.long-press-ready {
-    touch-action: manipulation;
+
+  .task-actions {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s;
   }
-  .task.long-pressing {
-    background: rgba(185, 73, 42, 0.12);
+  .task:hover .task-actions,
+  .task:focus-within .task-actions {
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .checkbox {
@@ -251,6 +260,24 @@
     flex-shrink: 0;
   }
   .claim-btn:hover {
+    background: var(--ember-deep);
+    color: var(--paper);
+  }
+
+  .delete-btn {
+    font-family: 'Special Elite', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+    background: transparent;
+    border: 1.5px solid var(--ember-deep);
+    color: var(--ember-deep);
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .delete-btn:hover {
     background: var(--ember-deep);
     color: var(--paper);
   }
@@ -392,8 +419,16 @@
     .sheet { padding: 24px 16px 60px; }
     .group { padding: 14px 16px; }
     .claim-btn { font-size: 10px; padding: 3px 8px; }
+    .delete-btn { font-size: 10px; padding: 3px 7px; }
     .new-task-grid {
       grid-template-columns: 1fr;
+    }
+  }
+
+  @media (hover: none) {
+    .task-actions {
+      opacity: 1;
+      pointer-events: auto;
     }
   }
 </style>
@@ -468,7 +503,6 @@ const DEFAULT_TASKS = [
 
 let state = { tasks: [] };
 let pendingClaimId = null;
-const LONG_PRESS_MS = 700;
 
 const contentEl = document.getElementById('content');
 const modal = document.getElementById('claim-modal');
@@ -573,10 +607,7 @@ function render() {
   contentEl.querySelectorAll('[data-toggle]').forEach(el => {
     el.addEventListener('click', (e) => {
       if (e.target.classList.contains('claim-btn')) return;
-      if (el.dataset.longPressTriggered === '1') {
-        el.dataset.longPressTriggered = '0';
-        return;
-      }
+      if (e.target.classList.contains('delete-btn')) return;
       toggleTask(el.dataset.toggle);
     });
   });
@@ -592,46 +623,22 @@ function render() {
       unassignTask(el.dataset.unassign);
     });
   });
-  contentEl.querySelectorAll('[data-remove-unassigned]').forEach(el => {
-    setupLongPressRemoval(el, el.dataset.removeUnassigned);
+  contentEl.querySelectorAll('[data-delete-unassigned]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeUnassignedTask(el.dataset.deleteUnassigned);
+    });
   });
 }
 
 function renderTask(t, showClaim) {
   return `
-    <div class="task ${t.done ? 'done' : ''} ${showClaim ? 'long-press-ready' : ''}" data-toggle="${t.id}" ${showClaim ? `data-remove-unassigned="${t.id}"` : ''}>
+    <div class="task ${t.done ? 'done' : ''}" data-toggle="${t.id}">
       <div class="checkbox"></div>
       <div class="task-text">${escapeHtml(t.text)}${t.note ? `<span class="task-note">— ${escapeHtml(t.note)}</span>` : ''}</div>
-      ${showClaim ? `<button class="claim-btn" data-claim="${t.id}">vezmu si</button>` : `<button class="claim-btn" data-unassign="${t.id}">odebrat</button>`}
+      ${showClaim ? `<div class="task-actions"><button class="claim-btn" data-claim="${t.id}">vezmu si</button><button class="delete-btn" data-delete-unassigned="${t.id}" aria-label="Smazat úkol">🗑</button></div>` : `<button class="claim-btn" data-unassign="${t.id}">odebrat</button>`}
     </div>
   `;
-}
-
-function setupLongPressRemoval(el, id) {
-  let timer = null;
-
-  const clearTimer = () => {
-    if (!timer) return;
-    clearTimeout(timer);
-    timer = null;
-    el.classList.remove('long-pressing');
-  };
-
-  el.addEventListener('pointerdown', (e) => {
-    if (e.target.closest('.claim-btn')) return;
-    clearTimer();
-    el.classList.add('long-pressing');
-    timer = setTimeout(async () => {
-      timer = null;
-      el.classList.remove('long-pressing');
-      el.dataset.longPressTriggered = '1';
-      await removeUnassignedTask(id);
-    }, LONG_PRESS_MS);
-  });
-
-  el.addEventListener('pointerup', clearTimer);
-  el.addEventListener('pointerleave', clearTimer);
-  el.addEventListener('pointercancel', clearTimer);
 }
 
 function escapeHtml(s) {
