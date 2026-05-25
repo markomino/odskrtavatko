@@ -268,6 +268,49 @@
   }
   .reset-btn:hover { color: var(--ember-deep); }
 
+  .new-task {
+    margin: 0 0 26px;
+    padding: 14px;
+    border: 1.5px dashed var(--ink-soft);
+    background: rgba(255, 252, 240, 0.55);
+  }
+  .new-task-title {
+    font-family: 'Special Elite', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    margin: 0 0 10px;
+  }
+  .new-task-grid {
+    display: grid;
+    grid-template-columns: 1fr 180px auto;
+    gap: 8px;
+  }
+  .new-task input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--ink);
+    background: var(--paper);
+    font-family: 'Newsreader', serif;
+    font-size: 16px;
+  }
+  .add-btn {
+    font-family: 'Special Elite', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+    padding: 10px 14px;
+    border: 1.5px solid var(--moss-deep);
+    background: var(--moss);
+    color: var(--paper);
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: filter 0.15s;
+  }
+  .add-btn:hover {
+    filter: brightness(0.94);
+  }
+
   .status {
     text-align: center;
     font-family: 'Caveat', cursive;
@@ -343,6 +386,9 @@
     .sheet { padding: 24px 16px 60px; }
     .group { padding: 14px 16px; }
     .claim-btn { font-size: 10px; padding: 3px 8px; }
+    .new-task-grid {
+      grid-template-columns: 1fr;
+    }
   }
 </style>
 </head>
@@ -354,6 +400,15 @@
   </header>
 
   <div id="content" class="loading">načítám sdílený stav…</div>
+
+  <section class="new-task" aria-label="Přidat nový úkol">
+    <div class="new-task-title">Přidat nový úkol</div>
+    <form id="new-task-form" class="new-task-grid">
+      <input type="text" id="new-task-text" placeholder="Co je potřeba udělat" maxlength="120" required>
+      <input type="text" id="new-task-assignee" placeholder="Kdo to má na starosti (volitelné)" maxlength="20">
+      <button class="add-btn" type="submit">Přidat</button>
+    </form>
+  </section>
 
   <div class="footer-actions">
     <span>změny se ukládají všem — </span>
@@ -412,6 +467,9 @@ const contentEl = document.getElementById('content');
 const modal = document.getElementById('claim-modal');
 const modalInput = document.getElementById('claim-input');
 const modalTitle = document.getElementById('modal-title');
+const newTaskForm = document.getElementById('new-task-form');
+const newTaskText = document.getElementById('new-task-text');
+const newTaskAssignee = document.getElementById('new-task-assignee');
 
 function loadState() {
   stateRef.on('value', (snapshot) => {
@@ -541,6 +599,27 @@ function escapeHtml(s) {
   }[c]));
 }
 
+function buildTaskId() {
+  return `t${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+}
+
+async function addTask(text, assignee) {
+  const normalizedText = text.trim();
+  const normalizedAssignee = assignee.trim();
+  if (!normalizedText) return;
+
+  state.tasks.push({
+    id: buildTaskId(),
+    text: normalizedText,
+    assignee: normalizedAssignee || null,
+    note: '',
+    done: false,
+  });
+
+  render();
+  await saveState();
+}
+
 async function toggleTask(id) {
   const t = state.tasks.find(x => x.id === id);
   if (!t) return;
@@ -596,6 +675,14 @@ document.getElementById('reset-btn').addEventListener('click', async () => {
   state = { tasks: DEFAULT_TASKS.map(t => ({ ...t })) };
   await saveState();
   render();
+});
+
+newTaskForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  await addTask(newTaskText.value, newTaskAssignee.value);
+  newTaskText.value = '';
+  newTaskAssignee.value = '';
+  newTaskText.focus();
 });
 
 loadState();
